@@ -42,7 +42,12 @@ const Loader = (() => {
 
   function hideLoader() {
     if (!loader) return;
-    loader.style.opacity  = '0';
+    const music = $('#loaderMusic');
+    if (music) {
+      music.pause();
+      music.currentTime = 0;
+    }
+    loader.style.opacity = '0';
     loader.style.pointerEvents = 'none';
     setTimeout(() => { loader.style.display = 'none'; }, 400);
   }
@@ -64,6 +69,11 @@ const Loader = (() => {
 
   function init() {
     if (!loader) return;
+    const music = $('#loaderMusic');
+    if (music) {
+      music.volume = 0.5;
+      music.play().catch(() => {});
+    }
     runStep();
   }
 
