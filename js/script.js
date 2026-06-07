@@ -42,14 +42,18 @@ const Loader = (() => {
 
   function hideLoader() {
     if (!loader) return;
-    const music = $('#loaderMusic');
-    if (music) {
-      music.pause();
-      music.currentTime = 0;
-    }
     loader.style.opacity = '0';
     loader.style.pointerEvents = 'none';
     setTimeout(() => { loader.style.display = 'none'; }, 400);
+  
+    // Music 3 second baad band hogi
+    setTimeout(() => {
+      const music = $('#loaderMusic');
+      if (music) {
+        music.pause();
+        music.currentTime = 0;
+      }
+    }, 1500);
   }
 
   function finish() {
@@ -290,49 +294,76 @@ const GameCards = (() => {
    6. VIDEO MODAL
 ============================================================ */
 const VideoModal = (() => {
-  let modal    = null;
+  let modal = null;
   let closeBtn = null;
   let backdrop = null;
-  let isOpen   = false;
+  let frame = null;
+  let isOpen = false;
 
-  function open() {
+  function open(videoUrl) {
     if (!modal || isOpen) return;
     isOpen = true;
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
+  
+    // Show loader first
+    const loader = $('#videoLoading');
+    if (loader) loader.classList.remove('hidden');
+  
+    if (frame && videoUrl) {
+      // Clean URL — remove si= parameter if present
+      const cleanUrl = videoUrl.split('?')[0];
+      frame.src = cleanUrl + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+  
+      // Hide loader when iframe loads
+      frame.onload = () => {
+        setTimeout(() => {
+          if (loader) loader.classList.add('hidden');
+        }, 800);
+      };
+    }
+  
     setTimeout(() => closeBtn && closeBtn.focus(), 100);
   }
-
+  
   function close() {
     if (!modal || !isOpen) return;
     isOpen = false;
     modal.hidden = true;
     document.body.style.overflow = '';
+  
+    if (frame) {
+      frame.src = '';
+      frame.onload = null;
+    }
+  
+    // Reset loader for next open
+    const loader = $('#videoLoading');
+    if (loader) loader.classList.remove('hidden');
   }
 
   function init() {
-    modal    = $('#videoModal');
+    modal = $('#videoModal');
     closeBtn = $('#modalClose');
     backdrop = $('#modalBackdrop');
+    frame = $('#youtubeFrame');
 
-    // Phase 3 HTML not pasted yet — skip silently
     if (!modal) return;
 
-    const openBtn = $('#trailerPlayBtn');
-    if (openBtn) openBtn.addEventListener('click', open);
+    const mainBtn = $('#trailerPlayBtn');
+    if (mainBtn) {
+      mainBtn.addEventListener('click', () => open(mainBtn.dataset.video));
+    }
+
+    $$('.mini-trailer-card').forEach((card) => {
+      card.addEventListener('click', () => open(card.dataset.video));
+    });
+
     if (closeBtn) closeBtn.addEventListener('click', close);
     if (backdrop) backdrop.addEventListener('click', close);
 
-    $$('.mini-trailer-card').forEach(card => {
-      card.addEventListener('click', open);
-    });
-
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && isOpen) close();
-    });
-
-    window.addEventListener('popstate', () => {
-      if (isOpen) close();
     });
   }
 
