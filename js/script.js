@@ -73,11 +73,30 @@ const Loader = (() => {
 
   function init() {
     if (!loader) return;
-    const music = $('#loaderMusic');
-    if (music) {
+  
+    function tryPlayMusic() {
+      const music = $('#loaderMusic');
+      if (!music) return;
       music.volume = 0.5;
       music.play().catch(() => {});
+      document.removeEventListener('touchstart', tryPlayMusic);
+      document.removeEventListener('click', tryPlayMusic);
     }
+  
+    // Desktop pe directly try karo
+    // Mobile pe pehle touch/click ka wait karo
+    document.addEventListener('touchstart', tryPlayMusic, { once: true });
+    document.addEventListener('click', tryPlayMusic, { once: true });
+  
+    // Desktop ke liye direct bhi try karo
+    setTimeout(() => {
+      const music = $('#loaderMusic');
+      if (music && music.paused) {
+        music.volume = 0.5;
+        music.play().catch(() => {});
+      }
+    }, 200);
+  
     runStep();
   }
 
@@ -123,6 +142,19 @@ const Navbar = (() => {
     if (!navbar || !hamburger || !mobileMenu) return;
     window.addEventListener('scroll', onScroll, { passive: true });
     hamburger.addEventListener('click', toggleMenu);
+
+    // Smooth scroll for all nav anchor links
+$$('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    const target = link.getAttribute('href');
+    if (target === '#') return;
+    const el = document.querySelector(target);
+    if (el) {
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+});
 
     $$('.mobile-nav-link').forEach(link => {
       link.addEventListener('click', () => {
@@ -273,22 +305,47 @@ const RevealObserver = (() => {
 ============================================================ */
 const GameCards = (() => {
   function init() {
-    const track = $('#gamesTrack');
-    const dots  = $$('.shd');
+    const wrapper = $('.games-scroll-wrapper');
+    const track   = $('#gamesTrack');
+    const dots    = $$('.shd');
     if (!track || !dots.length) return;
 
-    track.addEventListener('scroll', () => {
-      const scrollLeft = track.scrollLeft;
-      const maxScroll  = track.scrollWidth - track.clientWidth;
-      const pct        = maxScroll > 0 ? scrollLeft / maxScroll : 0;
-      const activeDot  = Math.round(pct * (dots.length - 1));
+    // Desktop pe grid hai — dots hide hain, kuch nahi karna
+    // Mobile pe flex+scroll hai — dots update karo
+
+    function updateDots() {
+      // scrollable container wrapper hai, track nahi
+      const el = wrapper || track;
+      const scrollLeft = el.scrollLeft;
+      const maxScroll  = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 0) return;
+      const pct       = scrollLeft / maxScroll;
+      const activeDot = Math.min(
+        Math.round(pct * (dots.length - 1)),
+        dots.length - 1
+      );
       dots.forEach((d, i) => d.classList.toggle('active', i === activeDot));
-    }, { passive: true });
+    }
+
+    // Scroll event wrapper pe lagao
+    if (wrapper) {
+      wrapper.addEventListener('scroll', updateDots, { passive: true });
+    }
+    track.addEventListener('scroll', updateDots, { passive: true });
+
+    // Dot click pe scroll
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        const el = wrapper || track;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        const targetScroll = (i / (dots.length - 1)) * maxScroll;
+        el.scrollTo({ left: targetScroll, behavior: 'smooth' });
+      });
+    });
   }
 
   return { init };
 })();
-
 
 /* ============================================================
    6. VIDEO MODAL

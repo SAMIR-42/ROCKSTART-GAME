@@ -2676,3 +2676,11 @@ h2 em, h3 em { font-style: normal; color: var(--gold); }
   transition: opacity 0.4s;
 }
 .mini-trailer-card:hover .mtc-img { opacity: 0.8; }
+/* mobile frdly a to z page means main page  */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+* {
+  box-sizing: border-box;
+}
